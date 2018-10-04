@@ -152,8 +152,7 @@ Function New-SiteColumn() {
                 $context.ExecuteQuery()
     
                 $LocalizedDisplayNames.GetEnumerator() | % {
-                    if ($web.Language -eq $_.Key.LCID)
-                    {
+                    if ($web.Language -eq $_.Key.LCID) {
                         $myfield.Title = $_.Value
                     }
                     $myfield.TitleResource.SetValueForUICulture($_.Key, $_.Value)
@@ -168,19 +167,29 @@ Function New-SiteColumn() {
         if ($FieldType -eq "TaxonomyFieldType") {
             $termSetPath = $TermStoreGroupName + "|" + $TermSetName
             Write-Host -ForegroundColor Yellow "El TermsetPath es $termSetPath"
+            $taxField = $null
             if ($Required) {
                 if ($AllowMultipleValues) {
-                    Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -Required -MultiValue
-                } else {
-                    Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -Required
+                    $taxField = Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -Required -MultiValue
+                }
+                else {
+                    $taxField = Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -Required
                 }
             }
             else {
                 if ($AllowMultipleValues) {
-                    Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -MultiValue
-                } else {
-                    Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath
+                    $taxField = Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath -MultiValue
                 }
+                else {
+                    $taxField = Add-PnPTaxonomyField -Id $Id -DisplayName $DisplayName -InternalName $InternalName -Group $Group -TermSetPath $termSetPath
+                }
+            }
+
+            if ($taxField -and $IsOpen) {
+                $taxField.Open = $true
+                $taxField.CreateValuesInEditForm = $true
+                $taxField.Update()
+                $taxField.Context.ExecuteQuery()
             }
         }
         else {
@@ -252,8 +261,7 @@ Function New-SiteColumn() {
             $context.ExecuteQuery()
 
             $LocalizedDisplayNames.GetEnumerator() | % {
-                if ($web.Language -eq $_.Key.LCID)
-                {
+                if ($web.Language -eq $_.Key.LCID) {
                     $myfield.Title = $_.Value
                 }
                 $myfield.TitleResource.SetValueForUICulture($_.Key, $_.Value)
@@ -330,8 +338,7 @@ Function New-SiteContentType() {
             $context.ExecuteQuery()
 
             $LocalizedNames.GetEnumerator() | % {
-                if ($web.Language -eq $_.Key.LCID)
-                {
+                if ($web.Language -eq $_.Key.LCID) {
                     $myContentType.Name = $_.Value
                 }
                 $myContentType.NameResource.SetValueForUICulture($_.Key, $_.Value)
@@ -340,14 +347,21 @@ Function New-SiteContentType() {
             $context.ExecuteQuery()
         }
 
-        Foreach ($item in $Fields.Add) {			
-            if ($item.Required -eq "True") {
-                Add-PnPFieldToContentType -Field $item.InternalName -ContentType $Name -Required
-            }
-            else {
-                Add-PnPFieldToContentType -Field $item.InternalName -ContentType $Name 
-            }
-            Write-Host -ForegroundColor Green "Campo anyadido al Tipo de Contenido '"$item.InternalName"'"
-        }   
+        if ($Fields) {
+            Foreach ($item in $Fields.Add) {			
+                if ($item.Required -eq "True") {
+                    Add-PnPFieldToContentType -Field $item.InternalName -ContentType $Name -Required
+                }
+                else {
+                    if ($item.Hidden -eq "True") {
+                        Add-PnPFieldToContentType -Field $item.InternalName -ContentType $Name -Hidden
+                    }
+                    else {
+                        Add-PnPFieldToContentType -Field $item.InternalName -ContentType $Name 
+                    }
+                }
+                Write-Host -ForegroundColor Green "Campo anyadido al Tipo de Contenido '"$item.InternalName"'"
+            }  
+        } 
     }
 }
