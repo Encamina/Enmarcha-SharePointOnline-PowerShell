@@ -201,12 +201,12 @@ Process {
                 }
 
                 if ($_.Default -eq "true") {
-                    Write-Host "Add-PnPView -List" $manifest.List.Name "-Title " $_.Name "-Query " $query " -SetAsDefault  -Fields " $resultField "-Paged "
+                    Write-Host "Creando vista por defecto" $_.Name
                     Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query -Fields $resultField  -Paged -SetAsDefault
 						
                 }
                 else {
-                    Write-Host "Add-PnPView -List" $manifest.List.Name "-Title " $_.Name "-Query " $query " -Fields " $resultField "-Paged "
+                    Write-Host "Creando vista" $_.Name
                     Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query  -Fields $resultField -Paged
                 }
             }
@@ -225,6 +225,41 @@ Process {
                 else {
                     Write-Host "Set-PnPDefaultColumnValues -List" $manifest.List.Name " -Field " $_.Field " -Value " $_.Value -ForegroundColor Green
                     Set-PnPDefaultColumnValues -List $manifest.List.Name -Field $_.Field -Value $_.Value
+                }
+            }
+        }
+
+        if ($manifest.List.Permissions -ne $null) {
+            $copyRoleAssignments = $false
+            if ($manifest.List.Permissions.CopyRoleAssignments -ne $null -and $manifest.List.Permissions.CopyRoleAssignments.ToLower() -eq "true") {
+                $copyRoleAssignments = $true
+            }
+            if ($copyRoleAssignments) {
+                Set-PnPList -Identity $manifest.List.Name -BreakRoleInheritance -CopyRoleAssignments
+            } else {
+                Set-PnPList -Identity $manifest.List.Name -BreakRoleInheritance
+            }
+
+            if ($manifest.List.Permissions.Add -ne $null) {
+                Write-Host "Agregando permisos a" $manifest.List.Name
+                $manifest.List.Permissions.Add | % {
+                    if ($_.User -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -User $_.User -AddRole $_.Role    
+                    }
+                    if ($_.Group -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -Group $_.Group -AddRole $_.Role    
+                    }
+                }
+            }
+            if ($manifest.List.Permissions.Remove -ne $null) {
+                Write-Host "Quitando permisos a" $manifest.List.Name
+                $manifest.List.Permissions.Remove | % {
+                    if ($_.User -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -User $_.User -RemoveRole $_.Role    
+                    }
+                    if ($_.Group -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -Group $_.Group -RemoveRole $_.Role    
+                    }
                 }
             }
         }
