@@ -209,6 +209,41 @@ Process {
             $existingList = Get-PnPList | Where-Object { $_.Title -eq $manifest.List.Name} 
         }
 
+        if ($manifest.List.Permissions -ne $null) {
+            $copyRoleAssignments = $false
+            if ($manifest.List.Permissions.CopyRoleAssignments -ne $null -and $manifest.List.Permissions.CopyRoleAssignments.ToLower() -eq "true") {
+                $copyRoleAssignments = $true
+            }
+            if ($copyRoleAssignments) {
+                Set-PnPList -Identity $manifest.List.Name -BreakRoleInheritance -CopyRoleAssignments
+            } else {
+                Set-PnPList -Identity $manifest.List.Name -BreakRoleInheritance
+            }
+
+            if ($manifest.List.Permissions.Add -ne $null) {
+                Write-Host "Agregando permisos a" $manifest.List.Name
+                $manifest.List.Permissions.Add | % {
+                    if ($_.User -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -User $_.User -AddRole $_.Role    
+                    }
+                    if ($_.Group -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -Group $_.Group -AddRole $_.Role    
+                    }
+                }
+            }
+            if ($manifest.List.Permissions.Remove -ne $null) {
+                Write-Host "Quitando permisos a" $manifest.List.Name
+                $manifest.List.Permissions.Remove | % {
+                    if ($_.User -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -User $_.User -RemoveRole $_.Role    
+                    }
+                    if ($_.Group -ne $null) {
+                        Set-PnPListPermission -Identity $manifest.List.Name -Group $_.Group -RemoveRole $_.Role    
+                    }
+                }
+            }
+        }
+
         #Write-Host "Insertando en la lista " $manifest.List.Name
         #$result= & "$currentPath\New-Item.ps1" -UrlWebApplication $UrlWebApplication -tenant $tenant  -Path "$Path"  -ListName $manifest.List.Name
         Set-PnPContext -Context $ctx # switch back to site A

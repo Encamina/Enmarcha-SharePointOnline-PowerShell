@@ -10,6 +10,9 @@
   </ContentTypes>
   <Versioning EnableVersioning="True" DraftVersionVisibility="Author" EnableModeration="True" MajorVersions="50"/>
   <ItemLevelPermissions ReadSecurity="ReadCreatedByUser" WriteSecurity="EditCreatedByUser" />
+  <Permissions CopyRoleAssignments="False">
+    <Add Group="Test group" Role="Contribute" />
+  </Permissions>
   <Views>
     <View Name="My View" Default="True" Fields="Title,Modified,Editor">
       <Query>
