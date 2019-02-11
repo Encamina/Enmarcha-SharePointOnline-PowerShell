@@ -27,9 +27,45 @@ Process {
         Write-Host -ForegroundColor Yellow "El sitio  $url ya Existe!!"
     }
 
-    Write-Host "Ruta a analizar" $Path
-    $urlSource = $tenant + $UrlWebApplication + "/" + $manifest.Site.RelativeUrl	
 
+    if ($manifest.Site.Permissions) {
+        Write-Host "Asignando permisos al subsitio"
+
+        $inherit = $true
+        if ($manifest.Site.Permissions.Inherit -and $manifest.Site.Permissions.Inherit.ToLower() -eq 'false') {
+            $inherit = $false
+        }
+
+        $web = Get-PnPweb -Identity $url -ErrorAction SilentlyContinue
+        $web.BreakRoleInheritance($inherit, $false)
+        $web.Update()
+        $currCtx = Get-PnPContext
+        $currCtx.ExecuteQuery()
+
+        $manifest.Site.Permissions.Add | ForEach-Object {
+            if ($_.User -ne $null) {
+                Set-PnPWebPermission -Identity $web -User $_.User -AddRole $_.Role
+            }
+            if ($_.Group -ne $null) {
+                $group = Get-PnPGroup -Identity $_.Group
+                Set-PnPWebPermission -Identity $web -Group $group -AddRole $_.Role
+            }
+        }
+
+        $manifest.Site.Permissions.Remove | ForEach-Object {
+            if ($_.User -ne $null) {
+                Set-PnPWebPermission -Identity $web -User $_.User -RemoveRole $_.Role
+            }
+            if ($_.Group -ne $null) {
+                $group = Get-PnPGroup -Identity $_.Group
+                Set-PnPWebPermission -Identity $web -Group $group -RemoveRole $_.Role
+            }
+        }
+    }
+
+
+    Write-Host "Ruta a analizar" $Path
+    $urlSource = $tenant + $UrlWebApplication + "/" + $manifest.Site.RelativeUrl
     Connect-PnPOnline -Url $urlSource -Credentials $credentials
 
     if ($manifest.Site.WebFeatures -ne $null) {
