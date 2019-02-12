@@ -43,11 +43,10 @@ Process {
         [xml]$manifest = Get-Content "$Path\manifest.xml"
         $url = ($tenant + $UrlWebApplication + "/" + $manifest.Site.RelativeUrl)
 
-        Update-WebNavigationConfig -WebUrl $url -Credentials $credentials
-
-        Connect-PnPOnline -Url $url -Credentials $credentials 
-        
         if ($manifest.Site.Navigation -ne $null) {
+            Update-WebNavigationConfig -WebUrl $url -Credentials $credentials    
+            Connect-PnPOnline -Url $url -Credentials $credentials 
+            
             Write-Host -ForegroundColor Yellow "Modificando la navegación"
             if ($manifest.Site.Navigation.Add -ne $null) {
                 $manifest.Site.Navigation.Add | % {
@@ -71,8 +70,8 @@ Process {
             }
     
             Write-Host -ForegroundColor Green "Navegación actualizada"
-        }
         
-        Set-PnPContext -Context $ctx # switch back to site A
+            Set-PnPContext -Context $ctx # switch back to site A
+        }
     }
 }
