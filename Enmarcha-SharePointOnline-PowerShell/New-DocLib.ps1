@@ -22,7 +22,6 @@ Process {
         [xml]$manifest = Get-Content "$Path\manifest.xml"
         $url = "$tenant$($UrlWebApplication)"
         $urlsite = "$url$($manifest.List.Url)"
-        Write-Host -ForegroundColor DarkMagenta $urlsite
 
         Connect-PnPOnline -Url $urlsite -Credentials $credentials
 		
