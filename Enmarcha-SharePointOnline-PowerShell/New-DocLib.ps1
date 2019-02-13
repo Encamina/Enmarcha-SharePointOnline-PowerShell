@@ -64,29 +64,32 @@ Process {
                 $manifest.List.ContentTypes.Add | % {
                     $ctName = $_.Name
                     $ctWeb = $availableCTs | where {$_.Name -eq $ctName}
-                    $ctId = ($ctWeb.Id.StringValue+"*")
-                    $ctList = $listCTs | where {$_.Id.StringValue -clike $ctId}
-                    if ($ctWeb.Name -ne $ctList.Name) {
-                        $ctList.Name = $ctWeb.Name
-                        $ctList.Update($false)
-                    }
 
-                    $listFields = $list.Fields
-                    $ctFields = $ctWeb.Fields
-                    $context.Load($listFields)
-                    $context.Load($ctFields)
-                    $context.ExecuteQuery()
-
-                    $ctFields | % {
-                        $internalName = $_.InternalName
-                        $fieldList = $listFields | where {$_.InternalName -eq $internalName}
-                        if ($fieldList.Title -ne $_.Title) {
-                            $fieldList.Title = $_.Title
-                            $fieldList.Update()
+                    if ($ctWeb) {
+                        $ctId = ($ctWeb.Id.StringValue+"*")
+                        $ctList = $listCTs | where {$_.Id.StringValue -clike $ctId}
+                        if ($ctWeb.Name -ne $ctList.Name) {
+                            $ctList.Name = $ctWeb.Name
+                            $ctList.Update($false)
                         }
-                    }
 
-                    $context.ExecuteQuery()
+                        $listFields = $list.Fields
+                        $ctFields = $ctWeb.Fields
+                        $context.Load($listFields)
+                        $context.Load($ctFields)
+                        $context.ExecuteQuery()
+
+                        $ctFields | % {
+                            $internalName = $_.InternalName
+                            $fieldList = $listFields | where {$_.InternalName -eq $internalName}
+                            if ($fieldList.Title -ne $_.Title) {
+                                $fieldList.Title = $_.Title
+                                $fieldList.Update()
+                            }
+                        }
+
+                        $context.ExecuteQuery()
+                    }
                 }
             }
             if ($manifest.List.ContentTypes.Remove -ne $null) {
@@ -186,28 +189,26 @@ Process {
 
         if ($manifest.List.Views -ne $null) {
             $manifest.List.Views.View | % {	
-                try {
-                    Remove-PnPView -List $manifest.List.Name -Identity $_.Name -Force
-                }
-                catch {}
+                $view = Get-PnPView -List $manifest.List.Name -Identity $_.Name -ErrorAction SilentlyContinue
+                if (-not $view) {
+                    $query = Convert-XmlElementToString($_.Query) 
+                    $query = $query.Replace("<Query>", "")
+                    $query = $query.Replace("</Query>", "")
+                    $field = $_.Fields -split ","
+                    $resultField = New-Object string[] $field.Count
+                    For ($i = 0; $i -le $field.Count - 1; $i++) {					 
+                        $resultField[$i] = $field[$i]
+                    }
 
-                $query = Convert-XmlElementToString($_.Query) 
-                $query = $query.Replace("<Query>", "")
-                $query = $query.Replace("</Query>", "")
-                $field = $_.Fields -split ","
-                $resultField = New-Object string[] $field.Count
-                For ($i = 0; $i -le $field.Count - 1; $i++) {					 
-                    $resultField[$i] = $field[$i]
-                }
-
-                if ($_.Default -eq "true") {
-                    Write-Host "Creando vista por defecto" $_.Name
-                    Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query -Fields $resultField  -Paged -SetAsDefault
-						
-                }
-                else {
-                    Write-Host "Creando vista" $_.Name
-                    Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query  -Fields $resultField -Paged
+                    if ($_.Default -eq "true") {
+                        Write-Host "Creando vista por defecto" $_.Name
+                        Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query -Fields $resultField  -Paged -SetAsDefault
+                            
+                    }
+                    else {
+                        Write-Host "Creando vista" $_.Name
+                        Add-PnPView -List $manifest.List.Name -Title $_.Name -Query $query  -Fields $resultField -Paged
+                    }
                 }
             }
         }
