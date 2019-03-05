@@ -20,7 +20,7 @@ Process {
 
     $web = Get-PnPweb -Identity $url -ErrorAction SilentlyContinue
     if ($web -eq $null) {	
-        New-PnPWeb  -Title $manifest.Site.Name -Url $manifest.Site.RelativeUrl -Description $manifest.Site.Description -Template $manifest.Site.Template   
+        New-PnPWeb  -Title $manifest.Site.Name -Url $manifest.Site.RelativeUrl -Description $manifest.Site.Description -Template $manifest.Site.Template -Locale $manifest.Site.Language
         Write-Host -ForegroundColor Green "Sitio $url Creado"
     }
     else {
